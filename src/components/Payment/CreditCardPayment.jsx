@@ -1,20 +1,55 @@
 import React, { useState } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import { ReactComponent as Mastercard } from "./mastercard.svg";
 import { ReactComponent as Visa } from "./visa.svg";
 import { ReactComponent as VisaDebit } from "./visa-debit.svg";
 import { ReactComponent as MastercardDebit } from "./mastercard-debit.svg";
+import { useCollapse } from "react-collapsed";
 import Select from "react-select";
 import "./payment.scss";
+import countryWithProvinces from "./country-options";
 
 const schema = yup.object().shape({
-  cardNumber: yup.string().required("Card number is required"),
+  cardNumber: yup.string().min(16).max(19).required("Card number is required"),
   expirationDate: yup.string().required("Expiration date is required"),
-  cvv: yup.string().required("CVV is required"),
-  name: yup.string().required("Name is required"),
-  cardType: yup.string().required("Card type is required"),
+  cvv: yup.string().min(3).max(4).required("CVV is required"),
+  name: yup
+    .string()
+    .matches(/^[a-zA-Z\s]+$/, "Name can only contain letters and spaces")
+    .required("Name is required")
+    .test("first-name", "First name is required", (value) => {
+      const names = value.split(" ");
+      return names.length > 0;
+    })
+    .test("last-name", "Last name is required", (value) => {
+      const names = value.split(" ");
+      return names.length > 1;
+    }),
+  postalCode: yup
+    .string()
+    .max(11, "Postal code must be 11 characters or less")
+    .matches(
+      /^[a-zA-Z0-9]+$/,
+      "Postal code can only contain letters and numbers"
+    )
+    .required("Postal code is required"),
+  city: yup
+    .string()
+    .matches(/^[a-zA-Z]+$/, "City can only contain letters and numbers")
+    .required("Postal code is required"),
+  billingAddress: yup
+    .string()
+    .matches(
+      /^[a-zA-Z0-9\s-/']*$/,
+      "Billing address can only contain letters, numbers, spaces, hyphens, forward slashes, and apostrophes"
+    )
+    .required("Billing address is required"),
+  country: yup.string().required("Country is required"),
+  province: yup.string().required("Province is required"),
+  month: yup.string().required("Month is required"),
+  year: yup.string().required("Year is required"),
 });
 
 const selectStyles = {
@@ -127,92 +162,169 @@ const monthOptions = [
   },
 ];
 
-const yearOptions = [
-  {
-    label: "2024",
-    value: 2024,
-  },
-  {
-    label: "2025",
-    value: 2025,
-  },
-  {
-    label: "2026",
-    value: 2026,
-  },
-  {
-    label: "2027",
-    value: 2027,
-  },
-  {
-    label: "2028",
-    value: 2028,
-  },
-];
+const generateNextTenYears = () => {
+  let currentYear = new Date().getFullYear();
+  const years = [
+    {
+      label: `${currentYear}`,
+      value: currentYear,
+      name: currentYear,
+    },
+  ];
+
+  for (let i = 0; i < 10; i++) {
+    years.push({
+      label: `${currentYear + 1}`,
+      value: currentYear + 1,
+    });
+
+    currentYear += 1;
+  }
+  return years;
+};
+
+const yearOptions = generateNextTenYears();
 
 const CreditCardForm = () => {
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors },
   } = useForm({
     resolver: yupResolver(schema),
+    mode: "all",
   });
 
+  const [inputValue, setInputValue] = useState("");
+  const [maskedValue, setMaskedValue] = useState("");
+  const [showHelper, setShowHelper] = useState(false);
+  const [country, setCountry] = useState("");
+  const [province, setProvince] = useState("");
+
+  const handleInputChange = (e) => {
+    const value = e.target.value;
+    const maskedValue = value
+      .replace(/\D/g, "")
+      .replace(/(\d{4})/g, "$1-")
+      .replace(/-$/, "");
+    setMaskedValue(maskedValue);
+    setInputValue(value);
+  };
+
+  console.log(errors);
+
+  const onSubmit = (data) => console.log(data);
   return (
-    <form>
+    <form onSubmit={handleSubmit(onSubmit)}>
       <div className="row">
         <label className="is-required" htmlFor="name-on-card">
           Name on card
         </label>
-        <input placeholder="Eg: JOHN DOE" id="name-on-card" />
+        <input
+          className={errors.name ? "error" : ""}
+          {...register("name")}
+          placeholder="Eg: JOHN DOE"
+          id="name-on-card"
+        />
+        <p className="helper-text">
+          If your name contains "-" use space and if " ' " remove
+        </p>
       </div>
       <div className="row">
         <label className="is-required" htmlFor="card-number">
           Card number
         </label>
-        <input placeholder="0000-0000-0000" id="card-number" />
+        <input
+          className={errors.cardNumber ? "error" : ""}
+          placeholder="0000-0000-0000-0000"
+          id="card-number"
+          {...register("cardNumber")}
+          onChange={handleInputChange}
+          value={maskedValue}
+        />
+        {showHelper && (
+          <p className="helper-text">
+            Input field with example helper text (built into the component)
+          </p>
+        )}
       </div>
       <div className="row">
         <label className="is-required" htmlFor="expiration-date">
           Expiration date
         </label>
         <div id="expiration-date">
-          <Select
-            styles={selectStyles}
-            placeholder={<span>Month</span>}
-            isSearchable={true}
-            options={monthOptions}
+          <Controller
+            control={control}
+            render={({ field }) => (
+              <Select
+                styles={selectStyles}
+                placeholder={<span>Month</span>}
+                isSearchable={true}
+                options={monthOptions}
+              />
+            )}
+            name="year"
           />
-          <Select
-            styles={selectStyles}
-            placeholder={<span>Year</span>}
-            isSearchable={true}
-            options={yearOptions}
+
+          <Controller
+            control={control}
+            render={({ field }) => (
+              <Select
+                styles={selectStyles}
+                placeholder={<span>Year</span>}
+                isSearchable={true}
+                options={yearOptions}
+              />
+            )}
+            name="year"
           />
+
           <div>
             <input
-              className="cvc"
+              className={`cvc ${errors.cvv ? "error" : ""}`}
               placeholder="CVC"
               id="cvc"
               maxL="999"
               type="number"
+              {...register("cvv")}
             />
           </div>
         </div>
       </div>
       <div className="row">
-        <label htmlFor="billing-details">Billing details</label>
-        <input placeholder="Enter billing address" id="billing-details" />
+        <label className="is-required" htmlFor="billing-details">
+          Billing details
+        </label>
+        <input
+          className={`${errors.billingAddress ? "error" : ""}`}
+          placeholder="Enter billing address"
+          id="billing-details"
+          {...register("billingAddress")}
+        />
       </div>
       <div className="row grid">
         <div>
-          <label htmlFor="city">City</label>
-          <input placeholder="Enter city" id="city" />
+          <label className="is-required" htmlFor="city">
+            City
+          </label>
+          <input
+            className={errors.city ? "error" : ""}
+            placeholder="Enter city"
+            id="city"
+            {...register("city")}
+          />
         </div>
         <div>
-          <label htmlFor="postal-code">Postal code</label>
-          <input placeholder="Enter postal code" id="postal-code" />
+          <label className="is-required" htmlFor="postal-code">
+            Postal code
+          </label>
+          <input
+            className={errors.postalCode ? "error" : ""}
+            placeholder="Enter postal code"
+            id="postal-code"
+            {...register("postalCode")}
+          />
         </div>
       </div>
 
@@ -222,18 +334,31 @@ const CreditCardForm = () => {
         </label>
         <div className="country-section">
           <Select
+            {...register("country")}
+            className={errors.country ? "error" : ""}
             styles={selectStyles}
             placeholder={<span>Country</span>}
             isSearchable={true}
+            options={countryWithProvinces}
+            value={country}
+            onChange={(e) => {
+              setCountry(e);
+              setProvince("");
+            }}
           />
           <Select
+            className={errors.province ? "error" : ""}
             styles={selectStyles}
             placeholder={<span>Province</span>}
             isSearchable={true}
+            options={country.provinces}
+            value={province}
+            onChange={(e) => setProvince(e)}
+            // {...register('province')}
           />
         </div>
       </div>
-      <div className="row">
+      {/* <div className="row">
         <label htmlFor="phone-number" className="is-required">
           Phone number
         </label>
@@ -244,7 +369,7 @@ const CreditCardForm = () => {
           Email
         </label>
         <input placeholder="example@email.com" id="email" />
-      </div>
+      </div> */}
     </form>
   );
 };
@@ -257,37 +382,53 @@ const ErrorAlertBanner = ({ title, description }) => (
 );
 
 const CreditCardPayment = () => {
-  const [collapsed, setCollapsed] = useState(false);
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm({
-    resolver: yupResolver(schema),
-  });
+  const [isExpanded, setExpanded] = useState(false);
+  const { getCollapseProps, getToggleProps } = useCollapse({ isExpanded });
 
   const onSubmit = async (data) => {
     console.log("Payment processed:", data);
   };
 
   return (
-    <div onClick={() => setCollapsed(!collapsed)} className="accordian">
-      <div className="label-with-radio">
-        <label htmlFor="credit-card">Pay with credit card</label>
-      </div>
-      <div className="row icon-tray">
-        <Mastercard />
-        <Visa />
-        <VisaDebit />
-        <MastercardDebit />
-      </div>
-      {true ? <div className="row">
-        <ErrorAlertBanner
-          title="Card Type Error"
-          description="We cannot find this card type. Please try again with a different card."
-        />
-      </div> : null}
-      <CreditCardForm />
+    <div className="accordian">
+      <input
+        type="checkbox"
+        name="radio-group"
+        id="radio"
+        className="radio-input"
+        checked={isExpanded}
+      />
+      <button
+        className="title-button"
+        type="checkbox"
+        {...getToggleProps({
+          onClick: () => setExpanded((prevExpanded) => !prevExpanded),
+        })}
+      >
+        <label for="radio" class="radio-label">
+          <span
+            class={`radio-inner-circle ${isExpanded ? "checked" : ""}`}
+          ></span>
+          Pay with credit card
+        </label>
+      </button>
+      <section {...getCollapseProps()}>
+        <div className="row icon-tray">
+          <Visa className={`${false ? "selected-card" : ""}`} />
+          <Mastercard className={`${false ? "selected-card" : ""}`} />
+          <VisaDebit className={`${true ? "selected-card" : ""}`} />
+          <MastercardDebit className={`${false ? "selected-card" : ""}`} />
+        </div>
+        {false ? (
+          <div className="row">
+            <ErrorAlertBanner
+              title="Card Type Error"
+              description="We cannot find this card type. Please try again with a different card."
+            />
+          </div>
+        ) : null}
+        <CreditCardForm />
+      </section>
     </div>
   );
 };

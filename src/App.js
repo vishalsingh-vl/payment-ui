@@ -1,4 +1,6 @@
+import React from "react";
 import CreditCardPayment from './components/Payment/CreditCardPayment';
+import "./fonts.css";
 
 function App() {
   return (

@@ -1,0 +1,36 @@
+/* src/fonts.css */
+@font-face {
+  font-family: 'Averta';
+  src: url('./fonts/AvertaStd-Regular 5.otf') format('opentype'),
+       url('./fonts/AvertaStd-Regular 5.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Averta';
+  src: url('./fonts/AvertaStd-Light 5.otf') format('opentype'),
+       url('./fonts/AvertaStd-Light 5.ttf') format('truetype');
+  font-weight: light;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Averta';
+  src: url('./fonts/AvertaStd-Semibold 5.otf') format('opentype'),
+       url('./fonts/AvertaStd-Semibold 5.ttf') format('truetype');
+  font-weight: 600;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Averta';
+  src: url('./fonts/AvertaStd-Black 5.otf') format('opentype'),
+       url('./fonts/AvertaStd-Black 5.ttf') format('truetype');
+  font-weight: bold;
+  font-style: normal;
+}
+
+
+
+/* Add other font weights and styles as needed */
