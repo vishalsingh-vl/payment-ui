@@ -13,7 +13,6 @@ import countryWithProvinces from "./country-options";
 
 const schema = yup.object().shape({
   cardNumber: yup.string().min(16).max(19).required("Card number is required"),
-  expirationDate: yup.string().required("Expiration date is required"),
   cvv: yup.string().min(3).max(4).required("CVV is required"),
   name: yup
     .string()
@@ -48,7 +47,7 @@ const schema = yup.object().shape({
     .required("Billing address is required"),
   country: yup.string().required("Country is required"),
   province: yup.string().required("Province is required"),
-  month: yup.string().required("Month is required"),
+  month: yup.number().required("Month is required"),
   year: yup.string().required("Year is required"),
 });
 
@@ -189,6 +188,7 @@ const CreditCardForm = () => {
   const {
     register,
     handleSubmit,
+    watch,
     control,
     formState: { errors },
   } = useForm({
@@ -212,9 +212,10 @@ const CreditCardForm = () => {
     setInputValue(value);
   };
 
-  console.log(errors);
+  const onSubmit = (data) => {
+    console.log(data);
+  };
 
-  const onSubmit = (data) => console.log(data);
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
       <div className="row">
@@ -256,25 +257,27 @@ const CreditCardForm = () => {
         <div id="expiration-date">
           <Controller
             control={control}
-            render={({ field }) => (
+            render={({ field: { onChange } }) => (
               <Select
                 styles={selectStyles}
                 placeholder={<span>Month</span>}
                 isSearchable={true}
                 options={monthOptions}
+                onChange={(e) => onChange(e.value)}
               />
             )}
-            name="year"
+            name="month"
           />
 
           <Controller
             control={control}
-            render={({ field }) => (
+            render={({ field: { onChange } }) => (
               <Select
                 styles={selectStyles}
                 placeholder={<span>Year</span>}
                 isSearchable={true}
                 options={yearOptions}
+                onChange={(e) => onChange(e.value)}
               />
             )}
             name="year"
@@ -333,28 +336,43 @@ const CreditCardForm = () => {
           Country
         </label>
         <div className="country-section">
-          <Select
-            {...register("country")}
-            className={errors.country ? "error" : ""}
-            styles={selectStyles}
-            placeholder={<span>Country</span>}
-            isSearchable={true}
-            options={countryWithProvinces}
-            value={country}
-            onChange={(e) => {
-              setCountry(e);
-              setProvince("");
-            }}
+          <Controller
+            control={control}
+            render={({ field: { onChange } }) => (
+              <Select
+                className={errors.country ? "error" : ""}
+                styles={selectStyles}
+                placeholder={<span>Country</span>}
+                isSearchable={true}
+                options={countryWithProvinces}
+                value={country}
+                onChange={(e) => {
+                  setCountry(e);
+                  setProvince("");
+                  onChange(e.value);
+                }}
+              />
+            )}
+            name="country"
           />
-          <Select
-            className={errors.province ? "error" : ""}
-            styles={selectStyles}
-            placeholder={<span>Province</span>}
-            isSearchable={true}
-            options={country.provinces}
-            value={province}
-            onChange={(e) => setProvince(e)}
-            // {...register('province')}
+
+          <Controller
+            control={control}
+            render={({ field: { onChange } }) => (
+              <Select
+                className={errors.province ? "error" : ""}
+                styles={selectStyles}
+                placeholder={<span>Province</span>}
+                isSearchable={true}
+                options={country.provinces}
+                value={province}
+                onChange={(e) => {
+                  setProvince(e);
+                  onChange(e.value);
+                }}
+              />
+            )}
+            name="province"
           />
         </div>
       </div>
@@ -370,6 +388,7 @@ const CreditCardForm = () => {
         </label>
         <input placeholder="example@email.com" id="email" />
       </div> */}
+      {/* <input type="submit" /> */}
     </form>
   );
 };
